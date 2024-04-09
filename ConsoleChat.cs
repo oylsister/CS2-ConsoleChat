@@ -1,20 +1,18 @@
-﻿using CounterStrikeSharp.API;
+﻿using System.Text.RegularExpressions;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
-using System.Text.RegularExpressions;
 
 namespace ConsoleChat
 {
     public class ConsoleChat : BasePlugin
     {
         public override string ModuleName => "Console Chat";
-        public override string ModuleVersion => "1.0";
+        public override string ModuleVersion => "1.1";
         public override string ModuleAuthor => "Oylsister";
 
         public List<string> BlackList = new List<string> { "recharge", "recast", "cooldown", "cool" };
-
-        int Countdown = 0;
 
         public override void Load(bool hotReload)
         {
@@ -36,11 +34,13 @@ namespace ConsoleChat
 
                     var timeleft = gameRules.RoundTime - (Server.CurrentTime - gameRules.RoundStartTime);
 
-                    if((Countdown > 5) && (timeleft > Countdown))
+                    var Countdown = GetCountNumber(info.ArgString);
+
+                    if ((Countdown > 5) && (timeleft > Countdown))
                     {
                         int triggerTime = (int)Math.Ceiling(timeleft - Countdown);
 
-                        if((int)timeleft - 0.5f == (int)timeleft)
+                        if ((int)timeleft - 0.5f == (int)timeleft)
                         {
                             triggerTime++;
                         }
@@ -48,7 +48,7 @@ namespace ConsoleChat
                         var min = triggerTime / 60;
                         var secs = triggerTime % 60;
 
-                        Server.PrintToChatAll($" {ChatColors.Red}CONSOLE:{ChatColors.Green} {info.ArgString} {ChatColors.Orange}[ {min}:{secs} ]");
+                        Server.PrintToChatAll($" {ChatColors.Red}CONSOLE:{ChatColors.Green} {info.ArgString} {ChatColors.Orange}[ {min}:{secs:D2} ]");
                         return HookResult.Handled;
                     }
                 }
@@ -71,48 +71,24 @@ namespace ConsoleChat
             if (CheckString(message))
                 return false;
 
-            string[] exploded = message.Split(" ");
-            int number;
-            bool isnumber = false;
+            string pattern = @"\b(\d+)(\s*)(s|sec|second|seconds)\b";
 
-            for (int i = 0; i < exploded.Length; i ++)
-            {
-                var numberStr = "";
+            return Regex.IsMatch(message, pattern, RegexOptions.IgnoreCase);
+        }
 
-                // if number and s has no space
-                for (int j = 0; j < exploded[i].Length; j++)
-                {
-                    if (int.TryParse(exploded[i].Substring(j, j), out int temp))
-                    {
-                        numberStr += exploded[i][j];
+        public int GetCountNumber(string message)
+        {
+            if (!IsCountable(message))
+                return 0;
 
-                        if (exploded[i][j + 1] == 's')
-                        {
-                            isnumber = int.TryParse(numberStr, out number);
+            string pattern = @"\b(\d+)(\s*)(s|sec|second|seconds)\b";
 
-                            if (!isnumber)
-                                return false;
+            var match = Regex.Match(message, pattern, RegexOptions.IgnoreCase);
 
-                            Countdown = number;
-                            return true;
-                        }
-                    }
-                }
+            if (match.Success)
+                return int.Parse(match.Groups[1].Value);
 
-                // if number and 's' is separated and spaced out.
-                isnumber = int.TryParse(exploded[i], out number);
-
-                if (isnumber)
-                {
-                    Countdown = number;
-                    var nextarray = exploded[i + 1].ToCharArray();
-
-                    if (nextarray[0] == 's')
-                        return true;
-                }
-            }
-
-            return false;
+            return 0;
         }
     }
 }
