@@ -23,20 +23,23 @@ namespace ConsoleChat
         {
             if (client == null)
             {
-                if (!IsCountable(info.ArgString))
+                var message = info.ArgString.ToLower();
+
+                if (!IsCountable(message))
                 {
                     Server.PrintToChatAll($" {ChatColors.Red}CONSOLE:{ChatColors.Green} {info.ArgString}");
                     return HookResult.Handled;
                 }
                 else
                 {
+                    //Server.PrintToChatAll("Countable message");
                     var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
 
                     var timeleft = gameRules.RoundTime - (Server.CurrentTime - gameRules.RoundStartTime);
 
                     var Countdown = GetCountNumber(info.ArgString);
 
-                    if ((Countdown > 5) && (timeleft > Countdown))
+                    if ((Countdown >= 5) && (timeleft > Countdown))
                     {
                         int triggerTime = (int)Math.Ceiling(timeleft - Countdown);
 
@@ -48,11 +51,17 @@ namespace ConsoleChat
                         var min = triggerTime / 60;
                         var secs = triggerTime % 60;
 
-                        Server.PrintToChatAll($" {ChatColors.Red}CONSOLE:{ChatColors.Green} {info.ArgString} {ChatColors.Orange}[ {min}:{secs:D2} ]");
+                        Server.PrintToChatAll($" {ChatColors.Red}CONSOLE:{ChatColors.Green} {info.ArgString} {ChatColors.Orange} - @{min}:{secs:D2}");
+                        return HookResult.Handled;
+                    }
+                    else
+                    {
+                        Server.PrintToChatAll($" {ChatColors.Red}CONSOLE:{ChatColors.Green} {info.ArgString}");
                         return HookResult.Handled;
                     }
                 }
             }
+
             return HookResult.Continue;
         }
 
@@ -71,7 +80,7 @@ namespace ConsoleChat
             if (CheckString(message))
                 return false;
 
-            string pattern = @"\b(\d+)(\s*)(s|sec|second|seconds)\b";
+            string pattern = @"\b(\d+)(\s*)(s|sec|secs|second|seconds)\b";
 
             return Regex.IsMatch(message, pattern, RegexOptions.IgnoreCase);
         }
@@ -81,7 +90,7 @@ namespace ConsoleChat
             if (!IsCountable(message))
                 return 0;
 
-            string pattern = @"\b(\d+)(\s*)(s|sec|second|seconds)\b";
+            string pattern = @"\b(\d+)(\s*)(s|sec|secs|second|seconds)\b";
 
             var match = Regex.Match(message, pattern, RegexOptions.IgnoreCase);
 
